@@ -1,0 +1,78 @@
+groups:
+  - name: system_alerts
+    rules:
+      # CPU使用率のアラート
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU使用率が高い"
+          description: "インスタンス {{ $labels.instance }} のCPU使用率が80%を超えています"
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU使用率が危険な水準"
+          description: "インスタンス {{ $labels.instance }} のCPU使用率が95%を超えています"
+
+      # メモリ使用率のアラート
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "メモリ使用率が高い"
+          description: "インスタンス {{ $labels.instance }} のメモリ使用率が75%を超えています"
+
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "メモリ使用率が危険な水準"
+          description: "インスタンス {{ $labels.instance }} のメモリ使用率が90%を超えています"
+
+      # ストレージ使用率のアラート
+      - alert: HighDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ディスク使用率が高い"
+          description: "インスタンス {{ $labels.instance }} のディスク使用率が80%を超えています"
+
+      - alert: CriticalDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ディスク使用率が危険な水準"
+          description: "インスタンス {{ $labels.instance }} のディスク使用率が90%を超えています"
+
+      # API応答時間のアラート
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API応答時間が遅い"
+          description: "APIの95パーセンタイル応答時間が200msを超えています"
+
+      - alert: CriticalAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API応答時間が危険な水準"
+          description: "APIの95パーセンタイル応答時間が500msを超えています" 

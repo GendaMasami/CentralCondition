@@ -1,0 +1,154 @@
+services:
+  backup-test:
+    image: alpine:latest
+    volumes:
+      - backup_data:/backup/data
+      - prometheus_data:/prometheus
+      - grafana_data:/var/lib/grafana
+      - ./logs/backup-test:/var/log
+      - ./backup/simple_test.sh:/backup/simple_test.sh # Mount the external script
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        mkdir -p /prometheus /var/lib/grafana /var/log /backup &&
+        chmod +x /backup/simple_test.sh &&
+        /backup/simple_test.sh
+      "
+    depends_on:
+      - elasticsearch
+      - prometheus
+      - grafana
+  auth:
+    image: node:16-alpine
+    expose:
+      - "3001"
+    volumes:
+      - ./security/auth:/app
+      - ./security/rbac:/app/rbac
+    working_dir: /app
+    command: sh -c "npm install && node server.js"
+    environment:
+      - JWT_SECRET=your-secret-key # In production, use Docker Secrets or a secure configuration management tool.
+    #depends_on: # Removed dependency on nginx
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./security/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./security/certificates/certs:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+      #depends_on:
+      # - auth # Removed dependency on auth
+
+  prometheus:
+    image: prom/prometheus:latest
+    expose:
+      - "9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    expose:
+      - "3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    expose:
+      - 9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    expose:
+      - "9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    depends_on:
+      - prometheus
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    expose:
+      - "9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+      # - backup_data:/backup # Removed redundant volume mount
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.0
+    expose:
+      - "5044"
+      - "9600"
+    volumes:
+      - ./logging/elk/logstash/config:/usr/share/logstash/config
+      - ./logging/elk/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logs/logstash:/var/log # Dedicated log directory
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    command: logstash -f /usr/share/logstash/pipeline/logstash.conf --config.reload.automatic
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    expose:
+      - "5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+  backup:
+    image: alpine:latest
+    volumes:
+      - ./backup:/backup
+      - backup_data:/backup/data
+    command: sh -c "apk add --no-cache curl && chmod +x /backup/*.sh && while true; do sleep 86400; /backup/backup.sh; done"
+
+  audit:
+    image: alpine:latest
+    volumes:
+      - ./audit:/audit
+      - ./monitoring:/etc/monitoring
+      - ./security:/etc/security
+      - ./backup:/backup
+      - ./logs/audit:/var/log # Dedicated log directory
+    command: sh -c "while true; do sleep 604800; /audit/internal_audit.sh && /audit/external_audit.sh; done"
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+  backup_data:

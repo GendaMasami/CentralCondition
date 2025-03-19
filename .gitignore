@@ -1,0 +1,9 @@
+Cursor/
+UI/
+基本ルール/
+logs/
+backup/data/
+node_modules/
+*.log
+*.tmp
+.DS_Store

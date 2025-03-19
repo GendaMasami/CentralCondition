@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password_hash": "$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.0Z1qQqR1e",
+      "roles": ["admin"],
+      "permissions": ["*"]
+    },
+    {
+      "username": "developer",
+      "password_hash": "$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.0Z1qQqR1e",
+      "roles": ["developer"],
+      "permissions": ["read", "write", "execute"]
+    },
+    {
+      "username": "ai_agent",
+      "password_hash": "$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.0Z1qQqR1e",
+      "roles": ["ai_agent"],
+      "permissions": ["read", "execute"]
+    }
+  ],
+  "roles": {
+    "admin": {
+      "description": "システム管理者",
+      "permissions": ["*"]
+    },
+    "developer": {
+      "description": "開発者",
+      "permissions": ["read", "write", "execute"]
+    },
+    "ai_agent": {
+      "description": "AIエージェント",
+      "permissions": ["read", "execute"]
+    }
+  }
+} 
