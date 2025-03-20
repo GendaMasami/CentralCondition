@@ -1,0 +1,132 @@
+flowchart TB
+    %% メインアプリケーションコンポーネント
+    Frontend["フロントエンドアプリケーション"]
+    Backend["バックエンドAPIサーバー"]
+    AuthService["認証・認可サービス"]
+    AIService["AI連携サービス"]
+    BatchProcessor["バッチ処理サービス"]
+    AnalyticsService["分析サービス"]
+    
+    %% インフラストラクチャ
+    K8s["Kubernetes"]
+    Docker["Docker"]
+    EKS["AWS EKS"]
+    
+    %% データストレージ
+    PostgreSQL["PostgreSQL"]
+    Redis["Redis"]
+    S3["AWS S3"]
+    ElasticSearch["Elasticsearch"]
+    
+    %% 外部サービス・API
+    AWS["AWS クラウドサービス"]
+    CloudFront["AWS CloudFront"]
+    Route53["AWS Route53"]
+    RDS["AWS RDS"]
+    SES["AWS SES"]
+    
+    %% モニタリング
+    Prometheus["Prometheus"]
+    Grafana["Grafana"]
+    CloudWatch["AWS CloudWatch"]
+    Sentry["Sentry"]
+    
+    %% CI/CD
+    GitHubActions["GitHub Actions"]
+    ArgoCD["ArgoCD"]
+    ECR["AWS ECR"]
+    SonarQube["SonarQube"]
+    
+    %% AI/ML
+    TensorFlow["TensorFlow"]
+    PyTorch["PyTorch"]
+    OpenAI["OpenAI API"]
+    
+    %% メッセージング
+    RabbitMQ["RabbitMQ"]
+    
+    %% 依存関係 - フロントエンド
+    Frontend -->|API通信| Backend
+    Frontend -->|認証| AuthService
+    Frontend -->|ホスティング| CloudFront
+    Frontend -->|エラー監視| Sentry
+    
+    %% 依存関係 - バックエンド
+    Backend -->|データ永続化| PostgreSQL
+    Backend -->|キャッシング| Redis
+    Backend -->|ファイル保存| S3
+    Backend -->|認証検証| AuthService
+    Backend -->|AI処理| AIService
+    Backend -->|ログ管理| ElasticSearch
+    Backend -->|メッセージング| RabbitMQ
+    Backend -->|実行環境| Docker
+    Backend -->|エラー監視| Sentry
+    
+    %% 依存関係 - 認証・認可サービス
+    AuthService -->|ユーザー情報永続化| PostgreSQL
+    AuthService -->|トークンキャッシュ| Redis
+    AuthService -->|実行環境| Docker
+    
+    %% 依存関係 - AIサービス
+    AIService -->|機械学習モデル| TensorFlow
+    AIService -->|機械学習モデル| PyTorch
+    AIService -->|外部AI API| OpenAI
+    AIService -->|結果保存| PostgreSQL
+    AIService -->|ファイル保存| S3
+    AIService -->|実行環境| Docker
+    
+    %% 依存関係 - バッチ処理
+    BatchProcessor -->|データ処理| PostgreSQL
+    BatchProcessor -->|メッセージング| RabbitMQ
+    BatchProcessor -->|メール送信| SES
+    BatchProcessor -->|実行環境| Docker
+    
+    %% 依存関係 - 分析サービス
+    AnalyticsService -->|データ分析| PostgreSQL
+    AnalyticsService -->|ログ分析| ElasticSearch
+    AnalyticsService -->|実行環境| Docker
+    
+    %% 依存関係 - インフラ
+    Docker -->|オーケストレーション| K8s
+    K8s -->|マネージドサービス| EKS
+    PostgreSQL -->|マネージドサービス| RDS
+    
+    %% 依存関係 - クラウドサービス
+    CloudFront -->|クラウドプロバイダ| AWS
+    Route53 -->|クラウドプロバイダ| AWS
+    RDS -->|クラウドプロバイダ| AWS
+    EKS -->|クラウドプロバイダ| AWS
+    S3 -->|クラウドプロバイダ| AWS
+    SES -->|クラウドプロバイダ| AWS
+    CloudWatch -->|クラウドプロバイダ| AWS
+    ECR -->|クラウドプロバイダ| AWS
+    
+    %% 依存関係 - モニタリング
+    Prometheus -->|実行環境| K8s
+    Grafana -->|メトリクスソース| Prometheus
+    Grafana -->|実行環境| K8s
+    
+    %% 依存関係 - CI/CD
+    GitHubActions -->|コンテナレジストリ| ECR
+    GitHubActions -->|デプロイ| ArgoCD
+    GitHubActions -->|品質チェック| SonarQube
+    ArgoCD -->|デプロイ対象| K8s
+    
+    %% スタイル設定
+    classDef app fill:#f9f,stroke:#333,stroke-width:1px
+    classDef infra fill:#bbf,stroke:#333,stroke-width:1px
+    classDef data fill:#bfb,stroke:#333,stroke-width:1px
+    classDef ext fill:#fbb,stroke:#333,stroke-width:1px
+    classDef monitoring fill:#fbf,stroke:#333,stroke-width:1px
+    classDef cicd fill:#bff,stroke:#333,stroke-width:1px
+    classDef ai fill:#ffb,stroke:#333,stroke-width:1px
+    classDef msg fill:#fdb,stroke:#333,stroke-width:1px
+    
+    class Frontend,Backend,AuthService,AIService,BatchProcessor,AnalyticsService app
+    class K8s,Docker,EKS infra
+    class PostgreSQL,Redis,S3,ElasticSearch data
+    class AWS,CloudFront,Route53,RDS,SES ext
+    class Prometheus,Grafana,CloudWatch,Sentry monitoring
+    class GitHubActions,ArgoCD,ECR,SonarQube cicd
+    class TensorFlow,PyTorch,OpenAI ai
+    class RabbitMQ msg

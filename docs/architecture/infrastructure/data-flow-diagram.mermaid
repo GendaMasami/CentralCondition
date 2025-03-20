@@ -1,0 +1,87 @@
+flowchart TD
+    %% アクター
+    User([ユーザー])
+    Admin([管理者])
+    BatchJob([バッチジョブ])
+    ExternalSystem([外部システム])
+
+    %% プロセス・サービス
+    Auth["認証・認可サービス (OAuth2, RBAC)"]
+    APIGateway["APIゲートウェイ"]
+    UserService["ユーザーサービス"]
+    CoreService["コアビジネスサービス"]
+    AIService["AI連携サービス"]
+    DataService["データ処理サービス"]
+    NotificationService["通知サービス"]
+    AnalyticsService["分析サービス"]
+
+    %% データストア
+    UserDB[(ユーザーDB)]
+    CoreDB[(コアデータDB)]
+    FileStore[(ファイルストレージ)]
+    Cache[(キャッシュ - 認証/AI推論/コアデータ)]
+    Queue[("メッセージキュー")]
+
+    %% 外部サービス
+    AIEngine["外部AI推論エンジン"]
+    PaymentGateway["決済ゲートウェイ"]
+    EmailService["メールサービス"]
+
+    %% データフロー - ユーザー認証
+    subgraph "ユーザー認証フロー"
+        User -->|1. ログイン要求| Auth
+        Auth -->|2. 認証情報検証| UserDB
+        Auth -->|3. キャッシュ確認| Cache
+        UserDB -->|4. ユーザー情報| Auth
+        Auth -->|5. JWTトークン発行| User
+    end
+
+    %% データフロー - 主要ビジネスプロセス
+    subgraph "主要ビジネスプロセスフロー"
+        User -->|1. API要求| APIGateway
+        APIGateway -->|2. トークン検証| Auth
+        APIGateway -->|3. リクエスト転送| CoreService
+        CoreService -->|4. キャッシュ確認| Cache
+        CoreService -->|5. データ取得/更新| CoreDB
+        CoreService -->|6a. ファイル操作| FileStore
+        CoreService -->|6b. レスポンス| APIGateway
+        APIGateway -->|7. レスポンス| User
+    end
+
+    %% データフロー - 決済処理
+    subgraph "決済処理フロー"
+        User -->|1. 決済要求| APIGateway
+        APIGateway -->|2. リクエスト転送| CoreService
+        CoreService -->|3. 決済処理要求| PaymentGateway
+        PaymentGateway -->|4. 決済結果| CoreService
+        CoreService -->|5. 結果保存| CoreDB
+        CoreService -->|6. エラーハンドリング| Queue
+        Queue -->|7. エラー通知| NotificationService
+        NotificationService -->|8. ユーザー通知| EmailService
+        CoreService -->|9. レスポンス| APIGateway
+        APIGateway -->|10. レスポンス| User
+    end
+
+    %% データフロー - AI連携プロセス
+    subgraph "AI連携プロセスフロー"
+        User -->|1. AI処理要求| APIGateway
+        APIGateway -->|2. リクエスト転送| AIService
+        AIService -->|3a. キャッシュ確認| Cache
+        AIService -->|3b. 入力データ取得| CoreDB
+        AIService -->|3c. AI推論要求| AIEngine
+        AIEngine -->|4. 推論結果| AIService
+        AIService -->|5. 結果保存| Cache
+        AIService -->|6. レスポンス| APIGateway
+        APIGateway -->|7. レスポンス| User
+    end
+
+    %% データフロー - バッチ処理（AIデータのクリーンアップ）
+    subgraph "バッチ処理フロー"
+        BatchJob -->|1. スケジュール実行| DataService
+        DataService -->|2. キャッシュクリーニング| Cache
+        DataService -->|3. データ取得| CoreDB
+        DataService -->|4. イベント発行| Queue
+        Queue -->|5. イベント消費| NotificationService
+        NotificationService -->|6. 通知送信| EmailService
+        EmailService -->|7. メール送信| User
+    end

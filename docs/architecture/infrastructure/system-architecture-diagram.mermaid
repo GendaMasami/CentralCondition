@@ -1,0 +1,129 @@
+graph TB
+    %% クライアント層
+    subgraph "クライアント層"
+        SPA["SPAクライアント\n(React/Vue)"]
+        MobileApp["モバイルアプリ\n(オプション)"]
+    end
+
+    %% フロントエンド層
+    subgraph "フロントエンド層"
+        UI["UIコンポーネント"]
+        StateManager["状態管理\n(Redux/Vuex)"]
+        ApiClient["APIクライアント"]
+        AuthClient["認証・認可クライアント"]
+    end
+
+    %% APIゲートウェイ層
+    subgraph "APIゲートウェイ層"
+        Gateway["API Gateway"]
+        Auth["認証・認可サービス"]
+    end
+
+    %% バックエンド層
+    subgraph "バックエンド層"
+        ApiServer["APIサーバー"]
+        BusinessLogic["ビジネスロジック層"]
+        DataAccess["データアクセス層"]
+        Integration["外部システム連携"]
+        AIService["AI連携サービス"]
+        BatchProcess["バッチ処理"]
+    end
+
+    %% データ層
+    subgraph "データ層"
+        RDB[(リレーショナルDB)]
+        Cache[(キャッシュ\nRedis)]
+        MQ[("メッセージキュー\nRabbitMQ/Kafka")]
+        FileStorage[("ファイルストレージ\nS3互換")]
+    end
+
+    %% インフラストラクチャ層
+    subgraph "インフラストラクチャ層"
+        Docker["Dockerコンテナ"]
+        K8s["Kubernetes\n(オプション)"]
+        SSL["HTTPS/TLS"]
+        LoadBalancer["ロードバランサー"]
+    end
+
+    %% 運用・監視層
+    subgraph "運用・監視層"
+        Prometheus["監視\nPrometheus"]
+        Grafana["ダッシュボード\nGrafana"]
+        Logging["ロギング\nELK/Fluentd"]
+        CI_CD["CI/CD\nGitHub Actions/Jenkins"]
+        Backup["バックアップ/リストア"]
+    end
+
+    %% 外部システム
+    subgraph "外部システム"
+        ExtAPI["外部API"]
+        ExtAI["AI推論エンジン"]
+    end
+
+    %% 接続関係
+    SPA --> UI
+    MobileApp --> ApiClient
+    UI --> StateManager
+    StateManager --> ApiClient
+    StateManager --> AuthClient
+    ApiClient --> Gateway
+    AuthClient --> Auth
+    Gateway --> Auth
+    Gateway --> ApiServer
+    Auth --> ApiServer
+    ApiServer --> BusinessLogic
+    BusinessLogic --> DataAccess
+    BusinessLogic --> Integration
+    BusinessLogic --> AIService
+    DataAccess --> RDB
+    DataAccess --> Cache
+    Integration --> MQ
+    Integration --> ExtAPI
+    AIService --> ExtAI
+    BatchProcess --> DataAccess
+    BatchProcess --> MQ
+    BusinessLogic --> FileStorage
+    
+    %% インフラ接続
+    ApiServer -.-> Docker
+    BusinessLogic -.-> Docker
+    DataAccess -.-> Docker
+    Integration -.-> Docker
+    AIService -.-> Docker
+    BatchProcess -.-> Docker
+    RDB -.-> Docker
+    Cache -.-> Docker
+    MQ -.-> Docker
+    Docker -.-> K8s
+    K8s -.-> LoadBalancer
+    LoadBalancer -.-> SSL
+    
+    %% 監視接続
+    Docker -.-> Prometheus
+    Prometheus -.-> Grafana
+    Docker -.-> Logging
+    RDB -.-> Backup
+    FileStorage -.-> Backup
+    
+    %% CI/CD接続
+    CI_CD -.-> Docker
+    CI_CD -.-> K8s
+
+    %% スタイル
+    classDef client fill:#f9f,stroke:#333,stroke-width:2px
+    classDef frontend fill:#bbf,stroke:#333,stroke-width:1px
+    classDef apiGateway fill:#bfb,stroke:#333,stroke-width:1px
+    classDef backend fill:#fbb,stroke:#333,stroke-width:1px
+    classDef data fill:#ffb,stroke:#333,stroke-width:1px
+    classDef infra fill:#bff,stroke:#333,stroke-width:1px
+    classDef ops fill:#fbf,stroke:#333,stroke-width:1px
+    classDef external fill:#ddd,stroke:#333,stroke-width:1px
+    
+    class SPA,MobileApp client
+    class UI,StateManager,ApiClient,AuthClient frontend
+    class Gateway,Auth apiGateway
+    class ApiServer,BusinessLogic,DataAccess,Integration,AIService,BatchProcess backend
+    class RDB,Cache,MQ,FileStorage data
+    class Docker,K8s,SSL,LoadBalancer infra
+    class Prometheus,Grafana,Logging,CI_CD,Backup ops
+    class ExtAPI,ExtAI external
